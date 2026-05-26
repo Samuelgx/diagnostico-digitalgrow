@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Diagnóstico de Automatización — DigitalGrow</title>
+<meta name="description" content="Descubre cómo la automatización puede acelerar tus ventas y maximizar el ROI.">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --surface: #111111;
+    --surface2: #1a1a1a;
+    --border: #222222;
+    --accent: #c8ff00;
+    --accent2: #00ffc8;
+    --text: #f0f0f0;
+    --muted: #666666;
+    --error: #ff4444;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; overflow-x: hidden; }
+
+  .progress-bar { height: 2px; background: var(--border); position: fixed; top: 0; left: 0; right: 0; z-index: 100; }
+  .progress-fill { height: 100%; background: var(--accent); transition: width 0.4s ease; }
+
+  header { border-bottom: 1px solid var(--border); padding: 1.25rem 2rem; display: flex; align-items: center; justify-content: space-between; }
+  .logo { font-family: 'Syne', sans-serif; font-size: 1.1rem; font-weight: 800; letter-spacing: -0.02em; }
+  .logo span { color: var(--accent); }
+  #step-counter { font-size: 0.8rem; color: var(--muted); }
+
+  main { max-width: 680px; margin: 0 auto; padding: 3rem 2rem 6rem; }
+
+  .step { display: none; }
+  .step.active { display: block; animation: fadeUp 0.35s ease; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+
+  .step-label { font-size: 0.72rem; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+  .step h1 { font-family: 'Syne', sans-serif; font-size: clamp(1.7rem, 4vw, 2.6rem); font-weight: 800; line-height: 1.1; letter-spacing: -0.03em; margin-bottom: 1rem; }
+  .step h1 em { font-style: normal; color: var(--accent); }
+  .step > p { color: var(--muted); font-size: 0.95rem; line-height: 1.6; margin-bottom: 2.5rem; }
+
+  .field { margin-bottom: 1.4rem; }
+  .field label { display: block; font-size: 0.75rem; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.5rem; }
+  .field input, .field textarea, .field select { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 0.875rem 1rem; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.95rem; outline: none; transition: border-color 0.2s, background 0.2s; -webkit-appearance: none; }
+  .field input:focus, .field textarea:focus, .field select:focus { border-color: var(--accent); background: var(--surface2); }
+  .field textarea { resize: vertical; min-height: 90px; }
+  .field select option { background: #1a1a1a; }
+
+  .choice-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 0.6rem; }
+  .choice-btn { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 0.8rem 1rem; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.875rem; cursor: pointer; transition: all 0.15s; text-align: left; width: 100%; }
+  .choice-btn:hover { border-color: #444; background: var(--surface2); }
+  .choice-btn.selected { border-color: var(--accent); background: rgba(200,255,0,0.07); color: var(--accent); }
+
+  .nav-row { display: flex; gap: 0.75rem; margin-top: 2.5rem; align-items: center; flex-wrap: wrap; }
+  .btn-next { background: var(--accent); color: #000; border: none; border-radius: 8px; padding: 0.875rem 1.75rem; font-family: 'Syne', sans-serif; font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: opacity 0.15s, transform 0.1s; }
+  .btn-next:hover { opacity: 0.9; }
+  .btn-next:active { transform: scale(0.98); }
+  .btn-back { background: transparent; color: var(--muted); border: 1px solid var(--border); border-radius: 8px; padding: 0.875rem 1.25rem; font-family: 'DM Sans', sans-serif; font-size: 0.875rem; cursor: pointer; transition: color 0.15s; }
+  .btn-back:hover { color: var(--text); }
+
+  #loading { display: none; text-align: center; padding: 4rem 2rem; }
+  .spinner { width: 44px; height: 44px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.75s linear infinite; margin: 0 auto 1.5rem; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #loading h2 { font-family: 'Syne', sans-serif; font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem; }
+  #loading p { color: var(--muted); font-size: 0.875rem; }
+  .loading-steps { margin-top: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; align-items: center; }
+  .loading-step { font-size: 0.8rem; color: var(--muted); display: flex; align-items: center; gap: 0.5rem; }
+  .loading-step.active { color: var(--accent); }
+  .loading-step.done { color: #555; text-decoration: line-through; }
+
+  #result { display: none; }
+  .result-header { border: 1px solid var(--border); border-radius: 16px; padding: 2rem; margin-bottom: 1.25rem; background: var(--surface); }
+  .tier-badge { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; padding: 0.3rem 0.875rem; border-radius: 99px; margin-bottom: 1rem; }
+  .tier-BASICO, .tier-BÁSICO { background: rgba(255,165,0,0.12); color: #ffa500; border: 1px solid rgba(255,165,0,0.25); }
+  .tier-INTERMEDIO { background: rgba(0,255,200,0.1); color: var(--accent2); border: 1px solid rgba(0,255,200,0.25); }
+  .tier-AVANZADO { background: rgba(200,255,0,0.1); color: var(--accent); border: 1px solid rgba(200,255,0,0.25); }
+  .result-header h2 { font-family: 'Syne', sans-serif; font-size: 1.4rem; font-weight: 700; margin-bottom: 0.75rem; }
+  .result-header p { color: #aaa; line-height: 1.7; font-size: 0.9rem; }
+
+  .result-section { border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 0.875rem; background: var(--surface); }
+  .result-section h3 { font-family: 'Syne', sans-serif; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 1rem; }
+
+  .fortaleza-item { display: flex; gap: 0.75rem; font-size: 0.875rem; color: #ccc; margin-bottom: 0.6rem; line-height: 1.5; }
+  .fortaleza-item::before { content: '✓'; color: var(--accent); font-weight: 700; flex-shrink: 0; }
+
+  .problem-item { border-left: 2px solid var(--border); padding: 0.7rem 0.875rem; margin-bottom: 0.6rem; background: var(--surface2); border-radius: 0 8px 8px 0; }
+  .problem-item.ALTO { border-left-color: var(--error); }
+  .problem-item.MEDIO { border-left-color: #ffa500; }
+  .problem-item.BAJO { border-left-color: var(--accent2); }
+  .problem-item p { font-size: 0.875rem; margin-bottom: 0.3rem; }
+  .problem-item small { font-size: 0.775rem; color: var(--muted); }
+
+  .week-item { padding: 1rem; background: var(--surface2); border-radius: 8px; margin-bottom: 0.6rem; }
+  .week-num { font-size: 0.68rem; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.4rem; }
+  .week-item h4 { font-family: 'Syne', sans-serif; font-size: 0.9rem; margin-bottom: 0.5rem; }
+  .week-item ul { padding-left: 1.1rem; }
+  .week-item li { font-size: 0.825rem; color: #999; margin-bottom: 0.25rem; line-height: 1.5; }
+  .tag-row { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.6rem; }
+  .tag { font-size: 0.72rem; padding: 0.2rem 0.65rem; border-radius: 99px; background: var(--surface); color: var(--muted); border: 1px solid var(--border); }
+
+  .roi-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.6rem; }
+  .roi-item { background: var(--surface2); border-radius: 8px; padding: 1rem; text-align: center; }
+  .roi-item .val { font-family: 'Syne', sans-serif; font-size: 1.2rem; font-weight: 800; color: var(--accent); margin-bottom: 0.25rem; }
+  .roi-item small { font-size: 0.72rem; color: var(--muted); }
+
+  .cta-box { background: rgba(200,255,0,0.05); border: 1px solid rgba(200,255,0,0.18); border-radius: 12px; padding: 1.5rem; margin-top: 1.25rem; }
+  .cta-box h3 { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem; }
+  .cta-box p { font-size: 0.875rem; color: #aaa; line-height: 1.6; }
+  .cta-box .urgencia { font-size: 0.8rem; color: var(--muted); margin-top: 0.6rem; font-style: italic; }
+
+  .error-box { border: 1px solid var(--error); border-radius: 12px; padding: 1.5rem; background: rgba(255,68,68,0.05); }
+  .error-box h3 { font-family: 'Syne', sans-serif; color: var(--error); margin-bottom: 0.5rem; }
+  .error-box p { font-size: 0.875rem; color: var(--muted); }
+
+  @media (max-width: 560px) { .roi-grid { grid-template-columns: 1fr; } .choice-grid { grid-template-columns: 1fr 1fr; } main { padding: 2rem 1.25rem 5rem; } }
+</style>
+</head>
+<body>
+
+<div class="progress-bar"><div class="progress-fill" id="pbar" style="width:0%"></div></div>
+
+<header>
+  <div class="logo">Digital<span>Grow</span></div>
+  <div id="step-counter" style="font-size:0.8rem;color:var(--muted);">Inicio</div>
+</header>
+
+<main>
+
+<!-- STEP 0 -->
+<div class="step active" id="step-0">
+  <div class="step-label">Diagnóstico gratuito</div>
+  <h1>¿Listo para convertir tu crecimiento en <em>resultados</em>?</h1>
+  <p>Descubre cómo la automatización puede acelerar tus ventas y maximizar el ROI en tu empresa. Completa el diagnóstico en 3 minutos y recibe un plan personalizado.</p>
+  <div class="nav-row">
+    <button class="btn-next" onclick="nextStep()">Comenzar diagnóstico →</button>
+  </div>
+</div>
+
+<!-- STEP 1 -->
+<div class="step" id="step-1">
+  <div class="step-label">Paso 1 — Sobre ti</div>
+  <h1>Cuéntanos sobre <em>ti</em></h1>
+  <div class="field"><label>Nombre completo *</label><input type="text" id="f-nombre" placeholder="Tu nombre completo" autocomplete="name" /></div>
+  <div class="field"><label>Empresa *</label><input type="text" id="f-empresa" placeholder="Nombre de tu empresa" autocomplete="organization" /></div>
+  <div class="field"><label>Cargo *</label><input type="text" id="f-cargo" placeholder="CEO, Director, Gerente..." autocomplete="organization-title" /></div>
+  <div class="field"><label>Email corporativo *</label><input type="email" id="f-email" placeholder="tu@empresa.com" autocomplete="email" /></div>
+  <div class="field"><label>WhatsApp</label><input type="tel" id="f-whatsapp" placeholder="+57 300 000 0000" autocomplete="tel" /></div>
+  <div class="field"><label>Sitio web</label><input type="text" id="f-web" placeholder="www.tuempresa.com o 'no tengo'" /></div>
+  <div class="nav-row">
+    <button class="btn-back" onclick="prevStep()">← Atrás</button>
+    <button class="btn-next" onclick="nextStep()">Continuar →</button>
+  </div>
+</div>
+
+<!-- STEP 2 -->
+<div class="step" id="step-2">
+  <div class="step-label">Paso 2 — Tu empresa</div>
+  <h1>Cuéntanos sobre tu <em>negocio</em></h1>
+  <div class="field">
+    <label>Industria *</label>
+    <select id="f-industria">
+      <option value="">Selecciona...</option>
+      <option>Tecnología</option><option>Retail / Comercio</option><option>Salud</option>
+      <option>Educación</option><option>Manufactura</option><option>Servicios profesionales</option>
+      <option>Inmobiliaria</option><option>Alimentos y bebidas</option><option>Logística</option>
+      <option>Marketing y publicidad</option><option>Otro</option>
+    </select>
+  </div>
+  <div class="field">
+    <label>Tamaño del equipo *</label>
+    <div class="choice-grid" id="grid-equipo">
+      <button class="choice-btn" onclick="pick('equipo',this,'1-5')">1 – 5 personas</button>
+      <button class="choice-btn" onclick="pick('equipo',this,'6-10')">6 – 10 personas</button>
+      <button class="choice-btn" onclick="pick('equipo',this,'11-20')">11 – 20 personas</button>
+      <button class="choice-btn" onclick="pick('equipo',this,'21-50')">21 – 50 personas</button>
+      <button class="choice-btn" onclick="pick('equipo',this,'50+')">Más de 50</button>
+    </div>
+  </div>
+  <div class="field">
+    <label>Facturación mensual aproximada *</label>
+    <div class="choice-grid" id="grid-facturacion">
+      <button class="choice-btn" onclick="pick('facturacion',this,'Menos de $5k')">Menos de $5k</button>
+      <button class="choice-btn" onclick="pick('facturacion',this,'$5k - $10k')">$5k – $10k</button>
+      <button class="choice-btn" onclick="pick('facturacion',this,'$10k - $50k')">$10k – $50k</button>
+      <button class="choice-btn" onclick="pick('facturacion',this,'$50k - $100k')">$50k – $100k</button>
+      <button class="choice-btn" onclick="pick('facturacion',this,'Más de $100k')">Más de $100k</button>
+    </div>
+  </div>
+  <div class="nav-row">
+    <button class="btn-back" onclick="prevStep()">← Atrás</button>
+    <button class="btn-next" onclick="nextStep()">Continuar →</button>
+  </div>
+</div>
+
+<!-- STEP 3 -->
+<div class="step" id="step-3">
+  <div class="step-label">Paso 3 — Tus desafíos</div>
+  <h1>¿Qué está <em>frenando</em> tu crecimiento?</h1>
+  <div class="field"><label>Principal cuello de botella comercial hoy *</label><textarea id="f-cuello" placeholder="Ej: No podemos dar seguimiento a todos los leads..."></textarea></div>
+  <div class="field"><label>Procesos que haces manualmente y te quitan tiempo *</label><textarea id="f-manuales" placeholder="Ej: Cotizaciones en Excel, seguimiento por WhatsApp..."></textarea></div>
+  <div class="field"><label>¿Qué está frenando el crecimiento de tu empresa? *</label><textarea id="f-frena" placeholder="Ej: No tenemos sistema de ventas estructurado..."></textarea></div>
+  <div class="nav-row">
+    <button class="btn-back" onclick="prevStep()">← Atrás</button>
+    <button class="btn-next" onclick="nextStep()">Continuar →</button>
+  </div>
+</div>
+
+<!-- STEP 4 -->
+<div class="step" id="step-4">
+  <div class="step-label">Paso 4 — Herramientas actuales</div>
+  <h1>¿Con qué <em>herramientas</em> trabajas hoy?</h1>
+  <div class="field"><label>¿Utilizan algún CRM? Si sí, ¿cuál? *</label><input type="text" id="f-crm" placeholder="HubSpot, Salesforce, ninguno, solo WhatsApp..." /></div>
+  <div class="field">
+    <label>¿Han invertido antes en marketing o automatización? *</label>
+    <div class="choice-grid" id="grid-inversion">
+      <button class="choice-btn" onclick="pick('inversion',this,'Sí, en marketing digital')">Marketing digital</button>
+      <button class="choice-btn" onclick="pick('inversion',this,'Sí, en automatización')">Automatización</button>
+      <button class="choice-btn" onclick="pick('inversion',this,'Sí, en ambos')">Ambos</button>
+      <button class="choice-btn" onclick="pick('inversion',this,'No, primera vez')">Primera vez</button>
+    </div>
+  </div>
+  <div class="nav-row">
+    <button class="btn-back" onclick="prevStep()">← Atrás</button>
+    <button class="btn-next" onclick="nextStep()">Continuar →</button>
+  </div>
+</div>
+
+<!-- STEP 5 -->
+<div class="step" id="step-5">
+  <div class="step-label">Paso 5 — Inversión</div>
+  <h1>¿Cuánto puedes <em>invertir</em>?</h1>
+  <div class="field">
+    <label>Presupuesto mensual para automatización *</label>
+    <div class="choice-grid" id="grid-presupuesto">
+      <button class="choice-btn" onclick="pick('presupuesto',this,'Menos de $500/mes')">Menos de $500</button>
+      <button class="choice-btn" onclick="pick('presupuesto',this,'$500-$2,000/mes')">$500 – $2,000</button>
+      <button class="choice-btn" onclick="pick('presupuesto',this,'$2,000-$5,000/mes')">$2,000 – $5,000</button>
+      <button class="choice-btn" onclick="pick('presupuesto',this,'Más de $5,000/mes')">Más de $5,000</button>
+    </div>
+  </div>
+  <div class="field">
+    <label>¿Cuándo deseas implementar? *</label>
+    <div class="choice-grid" id="grid-timing">
+      <button class="choice-btn" onclick="pick('timing',this,'Esta semana')">Esta semana</button>
+      <button class="choice-btn" onclick="pick('timing',this,'Este mes')">Este mes</button>
+      <button class="choice-btn" onclick="pick('timing',this,'En 1-3 meses')">1 – 3 meses</button>
+      <button class="choice-btn" onclick="pick('timing',this,'Más de 3 meses')">Más de 3 meses</button>
+    </div>
+  </div>
+  <div class="nav-row">
+    <button class="btn-back" onclick="prevStep()">← Atrás</button>
+    <button class="btn-next" onclick="submit()">Generar mi diagnóstico →</button>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div id="loading">
+  <div class="spinner"></div>
+  <h2>Analizando tu negocio...</h2>
+  <p>Claude está generando tu plan personalizado</p>
+  <div class="loading-steps">
+    <div class="loading-step" id="ls-1">⟳ Procesando respuestas del formulario</div>
+    <div class="loading-step" id="ls-2">⟳ Generando diagnóstico con IA</div>
+    <div class="loading-step" id="ls-3">⟳ Guardando en tu CRM</div>
+  </div>
+</div>
+
+<!-- RESULT -->
+<div id="result"></div>
+
+</main>
+
+<script>
+let currentStep = 0;
+const choices = {};
+
+function pick(group, el, val) {
+  document.querySelectorAll(`#grid-${group} .choice-btn`).forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  choices[group] = val;
+}
+
+function nextStep() {
+  document.getElementById(`step-${currentStep}`).classList.remove('active');
+  currentStep++;
+  const el = document.getElementById(`step-${currentStep}`);
+  if (el) { el.classList.add('active'); window.scrollTo(0, 0); }
+  updateUI();
+}
+
+function prevStep() {
+  document.getElementById(`step-${currentStep}`).classList.remove('active');
+  currentStep--;
+  document.getElementById(`step-${currentStep}`).classList.add('active');
+  window.scrollTo(0, 0);
+  updateUI();
+}
+
+function updateUI() {
+  const pct = (currentStep / 5) * 100;
+  document.getElementById('pbar').style.width = pct + '%';
+  document.getElementById('step-counter').textContent = currentStep === 0 ? 'Inicio' : `Paso ${currentStep} de 5`;
+}
+
+function setLoadingStep(n) {
+  for (let i = 1; i <= 3; i++) {
+    const el = document.getElementById(`ls-${i}`);
+    if (i < n) { el.className = 'loading-step done'; el.textContent = '✓ ' + el.textContent.slice(2); }
+    else if (i === n) { el.className = 'loading-step active'; }
+    else { el.className = 'loading-step'; }
+  }
+}
+
+async function submit() {
+  const d = {
+    nombre:      document.getElementById('f-nombre').value.trim(),
+    empresa:     document.getElementById('f-empresa').value.trim(),
+    cargo:       document.getElementById('f-cargo').value.trim(),
+    email:       document.getElementById('f-email').value.trim(),
+    whatsapp:    document.getElementById('f-whatsapp').value.trim(),
+    web:         document.getElementById('f-web').value.trim(),
+    industria:   document.getElementById('f-industria').value,
+    equipo:      choices.equipo || '',
+    facturacion: choices.facturacion || '',
+    cuello:      document.getElementById('f-cuello').value.trim(),
+    manuales:    document.getElementById('f-manuales').value.trim(),
+    frena:       document.getElementById('f-frena').value.trim(),
+    crm:         document.getElementById('f-crm').value.trim(),
+    inversion:   choices.inversion || '',
+    presupuesto: choices.presupuesto || '',
+    timing:      choices.timing || '',
+  };
+
+  if (!d.nombre || !d.empresa || !d.email) { alert('Por favor completa los campos obligatorios.'); return; }
+
+  document.getElementById(`step-${currentStep}`).classList.remove('active');
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('pbar').style.width = '85%';
+
+  try {
+    setLoadingStep(1);
+    await new Promise(r => setTimeout(r, 600));
+    setLoadingStep(2);
+
+    // Llama a la función serverless — las API keys están en el servidor
+    const res = await fetch('/.netlify/functions/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(d),
+    });
+
+    const plan = await res.json();
+
+    if (!res.ok) throw new Error(plan.error || 'Error del servidor');
+
+    setLoadingStep(3);
+    await new Promise(r => setTimeout(r, 800));
+
+    showResult(d, plan);
+  } catch(e) {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('result').style.display = 'block';
+    document.getElementById('result').innerHTML = `
+      <div class="error-box">
+        <h3>Error al generar el diagnóstico</h3>
+        <p>${e.message}</p>
+        <button class="btn-back" style="margin-top:1rem;" onclick="location.reload()">Intentar de nuevo</button>
+      </div>`;
+  }
+}
+
+function showResult(d, plan) {
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('result').style.display = 'block';
+  document.getElementById('pbar').style.width = '100%';
+  window.scrollTo(0, 0);
+
+  const tier = (plan.clasificacion || 'INTERMEDIO').replace('Á','A').replace('á','a');
+  const tierClass = 'tier-' + (plan.clasificacion || 'INTERMEDIO').replace('Á','A');
+
+  const fortalezas = (plan.diagnostico?.fortalezas || [])
+    .map(f => `<div class="fortaleza-item">${f}</div>`).join('');
+
+  const problemas = (plan.diagnostico?.problemas_criticos || [])
+    .map(p => `<div class="problem-item ${p.impacto}"><p>${p.problema}</p><small>${p.impacto_economico_estimado}</small></div>`).join('');
+
+  const semanas = (plan.plan_de_accion || []).map(s => `
+    <div class="week-item">
+      <div class="week-num">Semana ${s.semana}</div>
+      <h4>${s.titulo}</h4>
+      <ul>${(s.acciones||[]).map(a=>`<li>${a}</li>`).join('')}</ul>
+      <div class="tag-row"><span class="tag">${s.herramienta_recomendada}</span><span class="tag">${s.costo_estimado}</span></div>
+    </div>`).join('');
+
+  const roi = plan.roi_estimado || {};
+  const nombre1 = d.nombre.split(' ')[0];
+
+  document.getElementById('result').innerHTML = `
+    <div class="result-header">
+      <div class="tier-badge ${tierClass}">${plan.clasificacion}</div>
+      <h2>Tu diagnóstico está listo, ${nombre1}</h2>
+      <p>${plan.resumen_ejecutivo || ''}</p>
+    </div>
+
+    <div class="result-section">
+      <h3>Fortalezas detectadas</h3>
+      ${fortalezas || '<p style="color:var(--muted);font-size:.875rem;">No detectadas</p>'}
+    </div>
+
+    <div class="result-section">
+      <h3>Problemas críticos</h3>
+      ${problemas || '<p style="color:var(--muted);font-size:.875rem;">No detectados</p>'}
+    </div>
+
+    <div class="result-section">
+      <h3>Tu plan de acción</h3>
+      ${semanas}
+    </div>
+
+    <div class="result-section">
+      <h3>ROI estimado para ${d.empresa}</h3>
+      <div class="roi-grid">
+        <div class="roi-item"><div class="val">${roi.ahorro_tiempo_horas_semana||0}h</div><small>Horas recuperadas/semana</small></div>
+        <div class="roi-item"><div class="val">${roi.incremento_ventas_estimado||'—'}</div><small>Incremento de ventas</small></div>
+        <div class="roi-item"><div class="val">${roi.tiempo_recuperacion_inversion||'—'}</div><small>Recuperas la inversión</small></div>
+        <div class="roi-item"><div class="val">${roi.inversion_total_primer_mes||'—'}</div><small>Inversión primer mes</small></div>
+      </div>
+    </div>
+
+    <div class="cta-box">
+      <h3>${plan.paquete_recomendado} — ${plan.precio_recomendado}</h3>
+      <p>${plan.siguiente_paso||''}</p>
+      <p class="urgencia">${plan.mensaje_urgencia||''}</p>
+    </div>
+  `;
+}
+</script>
+</body>
+</html>
