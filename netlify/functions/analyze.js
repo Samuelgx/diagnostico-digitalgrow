@@ -187,6 +187,13 @@ CLASIFICACION: BASICO 1-5 empleados o sin CRM o presupuesto menor 500. INTERMEDI
           "Precio":        { rich_text: [{ text: { content: plan.precio_recomendado || '' } }] },
           "Resumen":       { rich_text: [{ text: { content: (plan.resumen_ejecutivo || '').slice(0, 2000) } }] },
           "Siguiente Paso":{ rich_text: [{ text: { content: (plan.siguiente_paso || '').slice(0, 2000) } }] },
+          "Plan Semanas":  { rich_text: [{ text: { content: ((plan.plan_de_accion || []).map(s => 'Semana ' + s.semana + ': ' + s.titulo + ' — ' + (s.acciones||[]).join(', ')).join('\n')).slice(0, 2000) } }] },
+          "ROI Ahorro Horas": { number: plan.roi_estimado?.ahorro_tiempo_horas_semana || 0 },
+          "ROI Incremento Ventas": { rich_text: [{ text: { content: plan.roi_estimado?.incremento_ventas_estimado || '' } }] },
+          "Industria":     { select: { name: d.industria || 'Otro' } },
+          "Equipo":        { select: { name: d.equipo || '1-5' } },
+          "Sitio Web":     { url: (d.web && d.web !== 'no' && d.web.startsWith('http')) ? d.web : null },
+          "Cuando implementar": { select: { name: d.timing || 'Este mes' } },
           "Estado":        { select: { name: 'Nuevo' } },
           "Fecha":         { date: { start: new Date().toISOString().split('T')[0] } },
         }
